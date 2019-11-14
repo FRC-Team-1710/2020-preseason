@@ -31,12 +31,13 @@ import edu.wpi.first.wpilibj.GenericHID.Hand;
 public class Robot extends TimedRobot {
   private final int PCM_CAN_ID = 14;
   // private final int PDP_CAN_ID = 0;
-  
+
   private XboxController driverController, mechController; // 0, 1
   private CANSparkMax rDrivePrimary, rDriveSecondary, lDrivePrimary, lDriveSecondary, clawArm; // 1, 2, 3, 4, 8
   private DoubleSolenoid rDriveShifter, lDriveShifter, clawSolenoid; // (0, 7), (1, 6), (2, 5)
   private TalonSRX rPickup, lPickup, pClawIntake, rClawIntake, lClawIntake; // 5, 6, 7, 9, 10
   private Compressor compressor; //14
+  private boolean tankDriveActive;
   /**
   * This function is run when the robot is first started up and should be
   * used for any initialization code.
@@ -46,69 +47,84 @@ public class Robot extends TimedRobot {
     // controllers
     driverController = new XboxController(0);
     mechController = new XboxController(1);
-    
+
     // drive
     rDrivePrimary = new CANSparkMax(1, MotorType.kBrushless);
     rDriveSecondary = new CANSparkMax(2, MotorType.kBrushless);
     lDrivePrimary = new CANSparkMax(3, MotorType.kBrushless);
     lDriveSecondary = new CANSparkMax(4, MotorType.kBrushless);
-    
+
     rDrivePrimary.setIdleMode(IdleMode.kBrake);
     rDriveSecondary.setIdleMode(IdleMode.kBrake);
     lDrivePrimary.setIdleMode(IdleMode.kBrake);
     lDriveSecondary.setIdleMode(IdleMode.kBrake);
-    
+
     rDriveSecondary.follow(rDrivePrimary, false);
     lDriveSecondary.follow(lDrivePrimary, false);
-    
+
     // shifters
     rDriveShifter = new DoubleSolenoid(PCM_CAN_ID, 0, 7);
     lDriveShifter = new DoubleSolenoid(PCM_CAN_ID, 1, 6);
-    
+
     // pickup
     rPickup = new TalonSRX(5);
     lPickup = new TalonSRX(6);
-    
+
     rPickup.setNeutralMode(NeutralMode.Brake);
     lPickup.setNeutralMode(NeutralMode.Brake);
-    
+
+    tankDriveActive = false;
+
     /** CD - If pickup is not functioning (but you hear sound), they might be fighting each other */
     /**      Uncomment the line below to invert one of the motors and stop them from fighting */
     // rPickup.setInverted(true);
    // rPickup.follow(lPickup);
-    
+
     // intake
     pClawIntake = new TalonSRX(7);
-    
+
     rClawIntake = new TalonSRX(9);
     rClawIntake.follow(pClawIntake);
     rClawIntake.setInverted(true);
-    
+
     lClawIntake = new TalonSRX(10);
    // lClawIntake.follow(pClawIntake);
-    
+
     // claw
     clawSolenoid = new DoubleSolenoid(PCM_CAN_ID, 2, 5);
     clawArm = new CANSparkMax(8, MotorType.kBrushless);
-    
+
     // compressor
     compressor = new Compressor(PCM_CAN_ID);
   }
   @Override
   public void autonomousPeriodic() {
     teleopPeriodic();
-  } 
+  }
   /**
   * This function is called periodically during operator control.
   */
   @Override
   public void teleopPeriodic() {
+    if (driverController.getBumperPressed(Hand.kRight)) { //getRawButton(5)
+      tankDriveActive = false;
+    } else if (driverController.getBumperPressed(Hand.kLeft)) { //getRawButton(6)
+      tankDriveActive = true;
+    }
+
     // drive - arcade
-    double xAxisDemand = driverController.getX(Hand.kRight) * -.3;
-    double yAxisDemand = driverController.getY(Hand.kLeft) * -.5;
-    rDrivePrimary.set(xAxisDemand + yAxisDemand);
-    lDrivePrimary.set(xAxisDemand - yAxisDemand);
-    
+    if (tankDriveActive) {
+      double leftDriveDemand = driverController.getY(Hand.kLeft);
+      double rightDriveDemand = driverController.getY(Hand.kRight);
+      rDrivePrimary.set(leftDriveDemand * -0.5);
+      lDrivePrimary.set(rightDriveDemand * -0.5);
+    } else {
+      double xAxisDemand = driverController.getX(Hand.kRight) * -.3;
+      double yAxisDemand = driverController.getY(Hand.kLeft) * -.5;
+      rDrivePrimary.set(xAxisDemand + yAxisDemand);
+      lDrivePrimary.set(xAxisDemand - yAxisDemand);
+    }
+
     // shifters
     /**
      * CD - Hold 'X' button for TURBO!
@@ -117,21 +133,21 @@ public class Robot extends TimedRobot {
      *      'driverController.getXButtonPressed()'
      *      conditional.
      */
-    if (driverController.getXButtonPressed()) { // Turbo-mode!
-      rDriveShifter.set(Value.kReverse);
-      lDriveShifter.set(Value.kForward);
-    } else {
-      rDriveShifter.set(Value.kForward);
-      lDriveShifter.set(Value.kReverse);
-    }
-    
+    // if (driverController.getXButtonPressed()) { // Turbo-mode!
+    //   rDriveShifter.set(Value.kReverse);
+    //   lDriveShifter.set(Value.kForward);
+    // } else {
+    //   rDriveShifter.set(Value.kForward);
+    //   lDriveShifter.set(Value.kReverse);
+    // }
+
     // pickup
     /** CD - This may set the pickup to extend and retract using the left Y axis instead of right Y axis */
     /**      To fix comment the line directly below, and uncomment the one under it */
     lPickup.set(ControlMode.PercentOutput, mechController.getY(Hand.kLeft)); //getRawAxis(1);
-    rPickup.set(ControlMode.PercentOutput, -1 * mechController.getY(Hand.kLeft)); 
+    rPickup.set(ControlMode.PercentOutput, -1 * mechController.getY(Hand.kLeft));
     // rPickup.set(ControlMode.PercentOutput, mechController.getY(Hand.kRight)); //getRawAxis(5);
-    
+
     // intake
     /**
      * CD - If not the right direction switch the kLeft and kRight params below.
@@ -145,14 +161,14 @@ public class Robot extends TimedRobot {
       pClawIntake.set(ControlMode.PercentOutput, 0);
       lClawIntake.set(ControlMode.PercentOutput, 0);
     }
-    
+
     // claw - arms
-    /** 
-     * CD - If you need the claw arm to be faster, increase this number. 
+    /**
+     * CD - If you need the claw arm to be faster, increase this number.
      *      Just be careful you don't want to slam/damage the arm while over-rotating.
      *      Something like .4 (0.05 increments) will probably be good.
      */
-    double clawDemandScaler = 0.25; 
+    double clawDemandScaler = 0.25;
     double mechLeftTriggerDemand = mechController.getTriggerAxis(Hand.kLeft); //getRawAxis(2);
     double mechRightTriggerDemand = mechController.getTriggerAxis(Hand.kRight); //getRawAxis(3);
     double clawArmDemand = (mechLeftTriggerDemand - mechRightTriggerDemand) * clawDemandScaler;
@@ -164,23 +180,23 @@ public class Robot extends TimedRobot {
     } else {
       clawArm.setSmartCurrentLimit(80);
     }
-    
+
     clawArm.set(clawArmDemand);
-    
-    // claw - solinoids - hatch mechanism? 
+
+    // claw - solinoids - hatch mechanism?
     boolean setClawOpen = driverController.getAButtonPressed(); //getRawButtonPressed(1)
     if (setClawOpen) { clawSolenoid.set(Value.kReverse); }
-    
+
     boolean setClawClose = driverController.getBButtonPressed(); //getRawButtonPressed(2)
     if (setClawClose) { clawSolenoid.set(Value.kForward); }
-    
+
     // compressor
-    boolean pressureLowAndMechAButtonPressed = compressor.getPressureSwitchValue() || mechController.getAButton();
+    boolean pressureLowAndMechAButtonPressed = compressor.getPressureSwitchValue() || driverController.getXButton();
     compressor.setClosedLoopControl(pressureLowAndMechAButtonPressed);
   }
 
   /**
-  * This function is called at the beginning of the disabled mode. 
+  * This function is called at the beginning of the disabled mode.
   * Used to shut all motors, solinoids, and compressor off.
   */
   @Override
