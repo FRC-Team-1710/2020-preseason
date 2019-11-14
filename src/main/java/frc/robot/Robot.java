@@ -116,8 +116,8 @@ public class Robot extends TimedRobot {
     if (tankDriveActive) {
       double leftDriveDemand = driverController.getY(Hand.kLeft);
       double rightDriveDemand = driverController.getY(Hand.kRight);
-      rDrivePrimary.set(leftDriveDemand * -0.5);
-      lDrivePrimary.set(rightDriveDemand * -0.5);
+      lDrivePrimary.set(leftDriveDemand * 0.5);
+      rDrivePrimary.set(rightDriveDemand * 0.5);
     } else {
       double xAxisDemand = driverController.getX(Hand.kRight) * -.3;
       double yAxisDemand = driverController.getY(Hand.kLeft) * -.5;
@@ -152,15 +152,15 @@ public class Robot extends TimedRobot {
     /**
      * CD - If not the right direction switch the kLeft and kRight params below.
      */
-    if (driverController.getBumper(Hand.kRight)) { //getRawButton(5)
-      lClawIntake.set(ControlMode.PercentOutput, .75);
-    } else if (driverController.getBumper(Hand.kLeft)) { //getRawButton(6)
-      pClawIntake.set(ControlMode.PercentOutput, -1);
-      lClawIntake.set(ControlMode.PercentOutput, -1);
-    } else {
-      pClawIntake.set(ControlMode.PercentOutput, 0);
-      lClawIntake.set(ControlMode.PercentOutput, 0);
-    }
+    // if (driverController.getBumper(Hand.kRight)) { //getRawButton(5)
+    //   lClawIntake.set(ControlMode.PercentOutput, .75);
+    // } else if (driverController.getBumper(Hand.kLeft)) { //getRawButton(6)
+    //   pClawIntake.set(ControlMode.PercentOutput, -1);
+    //   lClawIntake.set(ControlMode.PercentOutput, -1);
+    // } else {
+    //   pClawIntake.set(ControlMode.PercentOutput, 0);
+    //   lClawIntake.set(ControlMode.PercentOutput, 0);
+    // }
 
     // claw - arms
     /**
