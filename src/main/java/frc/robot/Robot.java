@@ -117,7 +117,7 @@ public class Robot extends TimedRobot {
       double leftDriveDemand = driverController.getY(Hand.kLeft);
       double rightDriveDemand = driverController.getY(Hand.kRight);
       lDrivePrimary.set(leftDriveDemand * 0.5);
-      rDrivePrimary.set(rightDriveDemand * 0.5);
+      rDrivePrimary.set(rightDriveDemand * -0.5);
     } else {
       double xAxisDemand = driverController.getX(Hand.kRight) * -.3;
       double yAxisDemand = driverController.getY(Hand.kLeft) * -.5;
